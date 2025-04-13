@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class GameState:
     SAVE_FILE = "alchemist_cipher_save.json"
-    SAVE_VERSION = 2 # Incremented version due to potential structure changes (e.g., saving 'elements')
+    SAVE_VERSION = 3 # Increment version due to adding solver name
 
     def __init__(self):
         self.current_level = 0
@@ -26,8 +26,10 @@ class GameState:
         self.current_puzzle: Optional[Union[Puzzle, ScenarioPuzzle]] = None
         self.puzzle_generator = PuzzleGenerator()
         self.save_version = self.SAVE_VERSION
-        # --- AI Solver State (Optional, could be managed in UI too) ---
-        # self.is_ai_solving = False
+        # --- AI Solver Config ---
+        self.selected_solver_name = "Internal (Perfect)" # Default solver
+        self.solver_configs: Dict[str, Dict[str, Any]] = {} # Store API keys etc. {solver_name: {config_key: value}}
+        # ---
 
     def save_game(self) -> None:
         """Saves the current game state, handling both puzzle types and potential errors."""
@@ -69,32 +71,23 @@ class GameState:
 
                 user_state = self.scenario_user_state
 
-            if not puzzle_type_name:
-                 logging.warning("Attempted to save game with no active or valid puzzle type.")
-                 # Save non-puzzle state only
-                 state = {
-                     "save_version": self.save_version,
-                     "current_level": self.current_level,
-                     "hints_used_this_level": self.hints_used_this_level,
-                     "puzzles_solved": self.puzzles_solved,
-                     "current_theme": self.current_theme,
-                     "unlocked_themes": list(self.unlocked_themes),
-                     "current_puzzle_type": None,
-                     "current_puzzle_data": None,
-                     "user_state": None
-                 }
-            else:
-                 state = {
-                     "save_version": self.save_version,
-                     "current_level": self.current_level,
-                     "hints_used_this_level": self.hints_used_this_level,
-                     "puzzles_solved": self.puzzles_solved,
-                     "current_theme": self.current_theme,
-                     "unlocked_themes": list(self.unlocked_themes),
-                     "current_puzzle_type": puzzle_type_name,
-                     "current_puzzle_data": puzzle_data,
-                     "user_state": user_state
-                 }
+            # Base state dictionary
+            state = {
+                "save_version": self.save_version,
+                "current_level": self.current_level,
+                "hints_used_this_level": self.hints_used_this_level,
+                "puzzles_solved": self.puzzles_solved,
+                "current_theme": self.current_theme,
+                "unlocked_themes": list(self.unlocked_themes),
+                # --- Save AI Solver State ---
+                "selected_solver_name": self.selected_solver_name,
+                "solver_configs": self.solver_configs, # Note: Saves potentially sensitive info if keys stored here!
+                # ---
+                # Puzzle state (might be None if no puzzle active)
+                "current_puzzle_type": puzzle_type_name,
+                "current_puzzle_data": puzzle_data,
+                "user_state": user_state
+            }
 
             with open(self.SAVE_FILE, 'w') as f:
                 json.dump(state, f, indent=4)
@@ -112,7 +105,6 @@ class GameState:
                     safe_state[k] = v
                 except TypeError:
                     safe_state[k] = f"!!UNSERIALIZABLE ({type(v)})!!"
-
             logging.error(f"Could not serialize game state: {e}. Partially Serializable State details: {safe_state}")
             raise TypeError(f"Could not serialize game state: {e}")
         except Exception as e:
@@ -123,7 +115,7 @@ class GameState:
         """Loads game state with improved error handling, validation, and defaults."""
         if not os.path.exists(self.SAVE_FILE):
             logging.info(f"Save file '{self.SAVE_FILE}' not found. Starting new game.")
-            self.current_puzzle = None
+            # Keep default __init__ values including AI solver config
             return
 
         state = None
@@ -135,9 +127,11 @@ class GameState:
             loaded_version = state.get("save_version", 0)
             if loaded_version < self.save_version:
                  logging.warning(f"Loading an older save file version ({loaded_version} vs current {self.save_version}). Applying defaults for missing fields.")
-                 # Implement migration logic here if necessary
-                 # Example: if loaded_version < 2 and "elements" not in state.get("current_puzzle_data", {}):
-                 #     pass # Handle missing elements for older saves if needed
+                 # Example: Migration for V3 - If solver fields don't exist, keep defaults
+                 if "selected_solver_name" not in state:
+                     state["selected_solver_name"] = self.selected_solver_name # Default from __init__
+                 if "solver_configs" not in state:
+                     state["solver_configs"] = self.solver_configs # Default from __init__
             elif loaded_version > self.save_version:
                  logging.error(f"Save file version ({loaded_version}) is newer than game version ({self.save_version}). Cannot load.")
                  raise RuntimeError("Save file is from a newer version of the game.")
@@ -150,6 +144,12 @@ class GameState:
             self.current_theme = state.get("current_theme", "Default")
             loaded_themes = state.get("unlocked_themes", ["Default"])
             self.unlocked_themes = set(loaded_themes) if isinstance(loaded_themes, list) else {"Default"}
+
+            # --- Load AI Solver State ---
+            self.selected_solver_name = state.get("selected_solver_name", "Internal (Perfect)") # Apply default if missing even after migration logic
+            loaded_configs = state.get("solver_configs", {})
+            self.solver_configs = loaded_configs if isinstance(loaded_configs, dict) else {}
+            # ---
 
             # Reset puzzle/user state before loading
             self.current_puzzle = None
@@ -164,7 +164,7 @@ class GameState:
                 logging.warning("Save file missing puzzle type or data. No puzzle loaded.")
                 return
 
-            # --- Reconstruct Symbol Cipher Puzzle ---
+            # --- Reconstruct Puzzle (Symbol or Scenario - existing logic follows) ---
             if puzzle_type_name == "SymbolCipher":
                 try:
                     raw_clues = puzzle_data.get("clues", [])
@@ -262,7 +262,7 @@ class GameState:
 
         except FileNotFoundError:
              logging.info(f"Save file '{self.SAVE_FILE}' not found.")
-             self.__init__()
+             self.__init__() # Re-initialize to get defaults including AI solver config
         except (IOError, json.JSONDecodeError) as e:
             logging.error(f"Error reading or parsing save file '{self.SAVE_FILE}': {e}")
             self.__init__()
@@ -401,59 +401,3 @@ class GameState:
         return None
 
     # --- AI Solver Method ---
-    def ai_take_turn(self) -> bool:
-        """
-        Simulates the AI taking a turn: getting the solution, checking it,
-        and advancing the level if correct.
-
-        Returns:
-            bool: True if the puzzle was successfully solved and advanced, False otherwise.
-        """
-        if not self.current_puzzle:
-            logging.warning("AI attempted turn with no active puzzle.")
-            return False
-
-        ai_solution_data = None
-        is_correct = False
-
-        try:
-            # 1. Get the "perfect" solution from the puzzle data
-            if isinstance(self.current_puzzle, Puzzle) and not self.current_puzzle.is_scenario:
-                ai_solution_data = self.current_puzzle.solution_mapping
-                # Update the game state's user_mapping as if the AI entered it
-                self.user_mapping = ai_solution_data.copy()
-                # Check using the internal user_mapping
-                is_correct = self.check_solution()
-                logging.info(f"AI applying solution for Symbol Cipher: {self.user_mapping}")
-
-            elif isinstance(self.current_puzzle, ScenarioPuzzle):
-                # Scenario solutions are directly in the puzzle's solution attribute
-                ai_solution_data = self.current_puzzle.solution
-                # Check by passing the solution dictionary
-                is_correct = self.check_solution(ai_solution_data)
-                logging.info(f"AI applying solution for Scenario ({self.current_puzzle.puzzle_type.name}): {ai_solution_data}")
-
-            else:
-                logging.error(f"AI cannot solve unknown puzzle type: {type(self.current_puzzle)}")
-                return False
-
-            # 2. Process the result
-            if is_correct:
-                logging.info(f"AI successfully solved Level {self.current_level + 1}.")
-                self.puzzles_solved += 1
-                # Note: Theme unlocking check happens in the UI loop after this returns True
-
-                # Advance level and start new puzzle
-                self.current_level += 1
-                self.start_new_puzzle() # Generate the next puzzle
-                return True
-            else:
-                # This should ideally not happen if the AI uses the correct solution
-                logging.error("AI failed to solve the puzzle even with the correct solution. Check puzzle/solution logic.")
-                logging.error(f"Puzzle Solution: {getattr(self.current_puzzle, 'solution_mapping', getattr(self.current_puzzle, 'solution', 'N/A'))}")
-                logging.error(f"AI's Data Used: {ai_solution_data}")
-                return False
-
-        except Exception as e:
-            logging.exception("An unexpected error occurred during AI turn.")
-            return False
