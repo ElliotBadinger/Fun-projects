@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                            QTextEdit, QMessageBox, QMenuBar, QMenu, QGridLayout,
                            QFrame, QSizePolicy, QTableWidget, QTableWidgetItem,
                            QHeaderView, QLineEdit, QDialog, QRadioButton, QButtonGroup,
-                           QScrollArea, QAbstractItemView)
+                           QScrollArea, QAbstractItemView, QSpacerItem) # Added QSpacerItem
 from PyQt6.QtCore import Qt, QSize, QTimer
 from PyQt6.QtGui import QFont, QIcon, QAction
 
@@ -171,47 +171,55 @@ class SymbolCipherGame(QMainWindow):
     def _create_control_bar(self, parent_layout):
         """Creates the bottom control bar with Hint, Check, and Reset buttons."""
         control_layout = QHBoxLayout()
-        control_frame = QFrame() # Use QFrame for better visual separation/styling
-        control_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        control_frame_layout = QHBoxLayout(control_frame)
+        # control_frame = QFrame() # Use QFrame for better visual separation/styling
+        # control_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        # control_frame_layout = QHBoxLayout(control_frame) # Removed this line
 
         icon_size = QSize(24, 24) # Define standard icon size
 
         # --- AI Control Buttons ---
-        self.start_ai_button = QPushButton()
+        self.start_ai_button = QPushButton(" Start AI")
         self.start_ai_button.setIcon(QIcon.fromTheme("media-playback-start", QIcon("icons/play.png"))) # Example icon path
         self.start_ai_button.setIconSize(icon_size)
         self.start_ai_button.setToolTip("Start AI Solver")
         self.start_ai_button.clicked.connect(self._start_ai_solver)
-        control_frame_layout.addWidget(self.start_ai_button)
+        control_layout.addWidget(self.start_ai_button) # Add directly to control_layout
 
-        self.stop_ai_button = QPushButton()
+        self.stop_ai_button = QPushButton(" Stop AI")
         self.stop_ai_button.setIcon(QIcon.fromTheme("media-playback-stop", QIcon("icons/stop.png"))) # Example icon path
         self.stop_ai_button.setIconSize(icon_size)
         self.stop_ai_button.setToolTip("Stop AI Solver")
         self.stop_ai_button.clicked.connect(self._stop_ai_solver)
         self.stop_ai_button.setEnabled(False) # Initially disabled
-        control_frame_layout.addWidget(self.stop_ai_button)
+        control_layout.addWidget(self.stop_ai_button) # Add directly to control_layout
 
-        control_frame_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        control_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)) # Add spacer directly
+
+        # --- Hint Button ---
+        self.hint_button = QPushButton(" Hint")
+        self.hint_button.setIcon(QIcon.fromTheme("help-contextual", QIcon("icons/hint.png"))) # Example icon path
+        self.hint_button.setIconSize(icon_size)
+        self.hint_button.setToolTip("Use a Hint")
+        self.hint_button.clicked.connect(self._use_hint)
+        control_layout.addWidget(self.hint_button) # Add directly to control_layout
 
         # --- Check Button ---
-        self.check_button = QPushButton()
+        self.check_button = QPushButton(" Check")
         self.check_button.setIcon(QIcon.fromTheme("dialog-ok-apply", QIcon("icons/check.png"))) # Example icon path
         self.check_button.setIconSize(icon_size)
         self.check_button.setToolTip("Check Solution")
         self.check_button.clicked.connect(self._check_solution)
-        control_frame_layout.addWidget(self.check_button)
+        control_layout.addWidget(self.check_button) # Add directly to control_layout
 
         # --- Reset Button ---
-        self.reset_button = QPushButton()
+        self.reset_button = QPushButton(" Reset")
         self.reset_button.setIcon(QIcon.fromTheme("edit-undo", QIcon("icons/reset.png"))) # Example icon path
         self.reset_button.setIconSize(icon_size)
         self.reset_button.setToolTip("Reset Puzzle")
         self.reset_button.clicked.connect(self._reset_puzzle)
-        control_frame_layout.addWidget(self.reset_button)
+        control_layout.addWidget(self.reset_button) # Add directly to control_layout
 
-        control_layout.addWidget(control_frame)
+        # control_layout.addWidget(control_frame) # Removed this line
         parent_layout.addLayout(control_layout)
 
     def _create_feedback_label(self, parent_layout):
@@ -451,10 +459,14 @@ class SymbolCipherGame(QMainWindow):
         # ... (same as before) ...
         if layout is not None:
             while layout.count():
-                item = layout.takeAt(0); widget = item.widget()
-                if widget is not None: widget.deleteLater()
-                else: sub_layout = item.layout();
-                if sub_layout is not None: self._clear_layout(sub_layout)
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    sub_layout = item.layout()
+                    if sub_layout is not None:
+                        self._clear_layout(sub_layout)
 
     # --- Assignment Logic ---
     def _update_assignments_display(self):
@@ -738,28 +750,32 @@ class SymbolCipherGame(QMainWindow):
                           if isinstance(cell_widget, QComboBox) and cell_widget.currentText() == "✔️": category_name, element_value = col_map[c]; final_solved_map[entity_name][category_name] = element_value
                  solution_dict = {"grid": final_solved_map}
 
-            elif isinstance(widget, QLineEdit) or isinstance(widget, QTextEdit):
-                if isinstance(widget, QLineEdit): answer = widget.text().strip();
-                if not answer: QMessageBox.information(self, "Input Needed", "Please enter answer."); return None; solution_dict = {"answer": answer}
-                elif isinstance(widget, QTextEdit) and puzzle.puzzle_type == HumanScenarioType.RELATIONSHIP_MAP:
-                     raw_text = widget.toPlainText().strip(); user_map_input = {}; expected_pair_count = len(puzzle.characters) // 2 if puzzle.characters else 0; puzzle_char_names = {char['name'] for char in puzzle.characters} if puzzle.characters else set()
-                     if raw_text:
-                          lines = raw_text.split('\n'); processed_people = set()
-                          for i, line in enumerate(lines):
-                               line = line.strip();
-                               if not line: continue
-                               parts = line.split(':', 1)
-                               if len(parts) == 2:
-                                    person1 = parts[0].strip(); person2 = parts[1].strip()
-                                    if person1 and person2:
-                                         if person1 not in puzzle_char_names or person2 not in puzzle_char_names: QMessageBox.warning(self, "Input Error", f"Invalid name line {i+1}."); return None
-                                         if person1 == person2: QMessageBox.warning(self, "Input Error", f"Cannot pair self line {i+1}."); return None
-                                         if person1 in processed_people or person2 in processed_people: QMessageBox.warning(self, "Input Error", f"Duplicate person line {i+1}."); return None
-                                         user_map_input[person1] = person2; processed_people.add(person1); processed_people.add(person2)
-                                    else: QMessageBox.warning(self, "Input Error", f"Invalid fmt line {i+1} (missing name)."); return None
-                               else: QMessageBox.warning(self, "Input Error", f"Invalid fmt line {i+1} (missing colon)."); return None
-                     if len(user_map_input) != expected_pair_count: QMessageBox.information(self, "Input Incomplete", f"Enter {expected_pair_count} pairs for {len(puzzle.characters)} individuals."); return None
-                     solution_dict = {"map": user_map_input}
+            elif isinstance(widget, QLineEdit):
+                answer = widget.text().strip()
+                if not answer:
+                    QMessageBox.information(self, "Input Needed", "Please enter your answer.")
+                    return None
+                solution_dict = {"answer": answer}
+
+            elif isinstance(widget, QTextEdit) and puzzle.puzzle_type == HumanScenarioType.RELATIONSHIP_MAP:
+                 raw_text = widget.toPlainText().strip(); user_map_input = {}; expected_pair_count = len(puzzle.characters) // 2 if puzzle.characters else 0; puzzle_char_names = {char['name'] for char in puzzle.characters} if puzzle.characters else set()
+                 if raw_text:
+                      lines = raw_text.split('\n'); processed_people = set()
+                      for i, line in enumerate(lines):
+                           line = line.strip();
+                           if not line: continue
+                           parts = line.split(':', 1)
+                           if len(parts) == 2:
+                                person1 = parts[0].strip(); person2 = parts[1].strip()
+                                if person1 and person2:
+                                     if person1 not in puzzle_char_names or person2 not in puzzle_char_names: QMessageBox.warning(self, "Input Error", f"Invalid name line {i+1}."); return None
+                                     if person1 == person2: QMessageBox.warning(self, "Input Error", f"Cannot pair self line {i+1}."); return None
+                                     if person1 in processed_people or person2 in processed_people: QMessageBox.warning(self, "Input Error", f"Duplicate person line {i+1}."); return None
+                                     user_map_input[person1] = person2; processed_people.add(person1); processed_people.add(person2)
+                                else: QMessageBox.warning(self, "Input Error", f"Invalid fmt line {i+1} (missing name)."); return None
+                           else: QMessageBox.warning(self, "Input Error", f"Invalid fmt line {i+1} (missing colon)."); return None
+                 if len(user_map_input) != expected_pair_count: QMessageBox.information(self, "Input Incomplete", f"Enter {expected_pair_count} pairs for {len(puzzle.characters)} individuals."); return None
+                 solution_dict = {"map": user_map_input}
 
             elif isinstance(widget, QTableWidget) and puzzle.puzzle_type == HumanScenarioType.ORDERING:
                  rows = widget.rowCount(); ordered_items = []; seen_items = set(); all_selected = True

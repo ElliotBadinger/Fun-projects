@@ -17,6 +17,7 @@ A Python-based desktop game featuring symbol cipher decoding and various scenari
         *   Agent Simulation: Infer rules or predict behavior by observing agents.
 *   **Progressive Difficulty:** Puzzles increase in complexity as you level up.
 *   **Hints:** Get help when you're stuck (limited per level).
+*   **AI Solver (Step-by-Step):** Watch the AI solve the current puzzle step-by-step, demonstrating the solution process.
 *   **Themes:** Unlock and apply different visual themes as you progress.
 *   **Save/Load:** Your progress (level, solved count, unlocked themes, current puzzle) is saved automatically and can be loaded.
 *   **Educational Feedback:** Learn about the logical skills used after solving each puzzle.
@@ -56,4 +57,6 @@ A Python-based desktop game featuring symbol cipher decoding and various scenari
 
 ## License
 
-*(Specify license information here - if applicable)* 
+*(Specify license information here - if applicable)*
+
+*(Current Version: ~2.3)* 

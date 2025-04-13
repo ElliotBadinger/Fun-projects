@@ -1,0 +1,60 @@
+{
+    "SCENARIO_NAMES": [
+        "Aisha", "Alex", "Alicia", "Ben", "Brandon", "Brenda", "Carlos", "Chloe", "Chen",
+        "David", "Deepa", "Eva", "Ethan", "Finn", "Fatima", "Grace", "Gabriel", "Hugo", "Hannah",
+        "Isla", "Isaac", "Javier", "Jack", "Jamal", "Kate", "Kenji", "Liam", "Lin",
+        "Maya", "Marco", "Mei", "Noah", "Nadia", "Omar", "Olivia", "Priya", "Pedro",
+        "Quinn", "Raj", "Ricardo", "Sofia", "Samira", "Tariq", "Tasha", "Uma", "Vikram",
+        "Wei", "Willow", "Xavier", "Yara", "Yusuf", "Zainab", "Zoe"
+    ],
+    "SCENARIO_TRAITS": [
+        "Honest", "Helpful", "Calm", "Creative", "Organized", "Optimistic", "Practical", "Patient",
+        "Punctual", "Resourceful", "Logical", "Detail-oriented", "Cooperative", "Diplomatic", "Generous",
+        "Curious", "Methodical", "Observant", "Humorous", "Adaptable",
+        "Forgetful", "Busy", "Secretive", "Anxious", "Distracted", "Quiet", "Talkative", "Skeptical",
+        "Pessimistic", "Impatient", "Impulsive", "Stubborn", "Argumentative", "Evasive", "Messy",
+        "Procrastinating", "Cynical", "Nitpicky", "Overly-competitive"
+    ],
+    "SCENARIO_OCCUPATIONS": [
+        "Accountant", "Artist", "Baker", "Barista", "Biologist", "Chef", "Carpenter", "Cashier",
+        "Data Analyst", "Dentist", "Doctor", "Electrician", "Engineer", "Event Planner", "Florist",
+        "Graphic Designer", "Hair Stylist", "Historian", "IT Support", "Journalist", "Librarian",
+        "Mechanic", "Musician", "Nurse", "Office Manager", "Pharmacist", "Photographer", "Plumber",
+        "Professor", "Project Manager", "Receptionist", "Researcher", "Salesperson", "Scientist",
+        "Software Developer", "Teacher", "Translator", "Urban Planner", "Veterinarian", "Waiter/Waitress",
+        "Web Developer", "Writer", "Yoga Instructor", "Zoologist"
+    ],
+    "SCENARIO_RELATIONSHIPS": [
+        "Colleagues", "Friends", "Siblings", "Neighbors", "Classmates", "Team Members",
+        "Manager and Employee", "Teacher and Student", "Client and Service Provider",
+        "Business Partners", "Old Rivals", "Mentor and Mentee", "Club Members", "Family Friends",
+        "Acquaintances", "Former Partners", "Housemates", "Competitors"
+    ],
+    "SCENARIO_SETTINGS": [
+        {"name": "Office Meeting Room", "details": ["Whiteboard with diagrams", "Half-empty coffee cups", "Laptop chargers plugged in"]},
+        {"name": "Local Cafe", "details": ["Background chatter", "Coffee machine hiss", "Pastries under glass", "Quiet background music"]},
+        {"name": "Family Dinner", "details": ["Dining table set for four", "Home-cooked food smell", "Overlapping conversations", "Kids' drawings on the fridge"]},
+        {"name": "Park Bench", "details": ["Birds chirping", "Distant traffic sounds", "People walking dogs", "Children playing nearby"]},
+        {"name": "Online Chat Group", "details": ["Typing indicators flickering", "Use of emojis and GIFs", "Time stamps on messages", "Pinned announcement"]},
+        {"name": "University Library", "details": ["Whispering voices", "Sound of pages turning", "Rows of bookshelves", "Study carrels with lamps"]},
+        {"name": "Community Workshop", "details": ["Tools hanging on pegboard", "Sawdust on the floor", "Partially finished projects", "Smell of wood or paint"]}
+    ],
+    "SCENARIO_GOALS": [
+        "Figure out who accidentally deleted the shared document.",
+        "Determine the correct order of arrivals at the party based on conflicting statements.",
+        "Identify the person who secretly agrees with the unpopular proposal.",
+        "Find the missing tool needed to assemble the furniture.",
+        "Decide the fairest way to divide the remaining project tasks.",
+        "Uncover the reason why someone missed the crucial meeting.",
+        "Determine who left the confusing note on the fridge.",
+        "Identify which statement contains the logical flaw.",
+        "Figure out the correct sequence for watering the office plants.",
+        "Find the discrepancy in the budget report.",
+        "Discover who borrowed the missing stapler without asking.",
+        "Piece together the timeline of events during the power outage.",
+        "Identify the source of the misleading information.",
+        "Resolve the scheduling conflict for the team meeting.",
+        "Deduce the motive behind a surprising decision.",
+        "Find the appropriate gift for a colleague based on subtle hints."
+    ]
+}
