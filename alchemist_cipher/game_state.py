@@ -26,6 +26,8 @@ class GameState:
         self.current_puzzle: Optional[Union[Puzzle, ScenarioPuzzle]] = None
         self.puzzle_generator = PuzzleGenerator()
         self.save_version = self.SAVE_VERSION
+        # --- AI Solver State (Optional, could be managed in UI too) ---
+        # self.is_ai_solving = False
 
     def save_game(self) -> None:
         """Saves the current game state, handling both puzzle types and potential errors."""
@@ -102,7 +104,16 @@ class GameState:
             logging.error(f"Could not save game state to {self.SAVE_FILE}: {e}")
             raise IOError(f"Could not save game state: {e}")
         except TypeError as e:
-            logging.error(f"Could not serialize game state: {e}. State details: {state}")
+            # Attempt to serialize state even on error for debugging
+            safe_state = {}
+            for k, v in state.items():
+                try:
+                    json.dumps({k: v}) # Test serialization
+                    safe_state[k] = v
+                except TypeError:
+                    safe_state[k] = f"!!UNSERIALIZABLE ({type(v)})!!"
+
+            logging.error(f"Could not serialize game state: {e}. Partially Serializable State details: {safe_state}")
             raise TypeError(f"Could not serialize game state: {e}")
         except Exception as e:
             logging.exception(f"An unexpected error occurred during game save.")
@@ -172,7 +183,11 @@ class GameState:
                         is_verified=puzzle_data.get("is_verified", False) # Load verification status
                     )
                     if isinstance(user_state, dict):
-                         self.user_mapping = user_state
+                         # Validate keys and values for user_mapping
+                         valid_user_mapping = {k: v for k, v in user_state.items() if isinstance(k, str) and isinstance(v, str)}
+                         if len(valid_user_mapping) != len(user_state):
+                            logging.warning("Invalid keys/values found in loaded user_mapping for SymbolCipher, resetting partially.")
+                         self.user_mapping = valid_user_mapping
                     else:
                          logging.warning("Invalid user_state for SymbolCipher, resetting.")
                          self.user_mapping = {}
@@ -195,7 +210,7 @@ class GameState:
                     # Validate required fields common to all scenarios
                     required_fields = ["level", "description", "characters", "setting", "goal", "information", "solution"]
                     if not all(field in puzzle_data for field in required_fields):
-                         raise ValueError("Missing required fields in saved Scenario puzzle data.")
+                         raise ValueError(f"Missing required fields in saved Scenario puzzle data. Found: {list(puzzle_data.keys())}")
 
                     # Use specific class for LogicGrid if type matches
                     if puzzle_type_enum == HumanScenarioType.LOGIC_GRID:
@@ -294,7 +309,9 @@ class GameState:
             self.user_mapping = {}
             self.scenario_user_state = None
             self.hints_used_this_level = 0
-            logging.info(f"Started new puzzle (Level {self.current_level + 1}, Type: {type(self.current_puzzle).__name__}, Scenario: {getattr(self.current_puzzle, 'puzzle_type', 'N/A')})")
+            puzzle_type_name = type(self.current_puzzle).__name__
+            scenario_detail = f"({getattr(self.current_puzzle, 'puzzle_type', 'N/A').name})" if getattr(self.current_puzzle, 'is_scenario', False) else ""
+            logging.info(f"Started new puzzle (Level {self.current_level + 1}, Type: {puzzle_type_name}{scenario_detail})")
             self.save_game() # Save immediately after starting a new puzzle
         except ValueError as e:
             logging.error(f"Could not generate puzzle: {e}")
@@ -319,7 +336,8 @@ class GameState:
                  logging.warning("Scenario puzzle check called with user_solution=None.")
                  return False
             # Store the user's current attempt for potential hint generation later
-            self.scenario_user_state = user_solution
+            # We might not want the AI's perfect solution stored here?
+            # self.scenario_user_state = user_solution
             return self.current_puzzle.check_solution(user_solution)
         else:
             logging.error(f"check_solution called on unexpected puzzle type: {type(self.current_puzzle)}")
@@ -381,3 +399,61 @@ class GameState:
             if self.puzzles_solved >= solved_count and theme_name not in self.unlocked_themes:
                 return theme_name
         return None
+
+    # --- AI Solver Method ---
+    def ai_take_turn(self) -> bool:
+        """
+        Simulates the AI taking a turn: getting the solution, checking it,
+        and advancing the level if correct.
+
+        Returns:
+            bool: True if the puzzle was successfully solved and advanced, False otherwise.
+        """
+        if not self.current_puzzle:
+            logging.warning("AI attempted turn with no active puzzle.")
+            return False
+
+        ai_solution_data = None
+        is_correct = False
+
+        try:
+            # 1. Get the "perfect" solution from the puzzle data
+            if isinstance(self.current_puzzle, Puzzle) and not self.current_puzzle.is_scenario:
+                ai_solution_data = self.current_puzzle.solution_mapping
+                # Update the game state's user_mapping as if the AI entered it
+                self.user_mapping = ai_solution_data.copy()
+                # Check using the internal user_mapping
+                is_correct = self.check_solution()
+                logging.info(f"AI applying solution for Symbol Cipher: {self.user_mapping}")
+
+            elif isinstance(self.current_puzzle, ScenarioPuzzle):
+                # Scenario solutions are directly in the puzzle's solution attribute
+                ai_solution_data = self.current_puzzle.solution
+                # Check by passing the solution dictionary
+                is_correct = self.check_solution(ai_solution_data)
+                logging.info(f"AI applying solution for Scenario ({self.current_puzzle.puzzle_type.name}): {ai_solution_data}")
+
+            else:
+                logging.error(f"AI cannot solve unknown puzzle type: {type(self.current_puzzle)}")
+                return False
+
+            # 2. Process the result
+            if is_correct:
+                logging.info(f"AI successfully solved Level {self.current_level + 1}.")
+                self.puzzles_solved += 1
+                # Note: Theme unlocking check happens in the UI loop after this returns True
+
+                # Advance level and start new puzzle
+                self.current_level += 1
+                self.start_new_puzzle() # Generate the next puzzle
+                return True
+            else:
+                # This should ideally not happen if the AI uses the correct solution
+                logging.error("AI failed to solve the puzzle even with the correct solution. Check puzzle/solution logic.")
+                logging.error(f"Puzzle Solution: {getattr(self.current_puzzle, 'solution_mapping', getattr(self.current_puzzle, 'solution', 'N/A'))}")
+                logging.error(f"AI's Data Used: {ai_solution_data}")
+                return False
+
+        except Exception as e:
+            logging.exception("An unexpected error occurred during AI turn.")
+            return False
