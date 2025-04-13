@@ -1,0 +1,26 @@
+{
+    "Neighbors": {
+        "categories": ["Name", "HouseColor", "Pet"],
+        "elements": [
+            ["Alice", "Bob", "Charlie"],
+            ["Red", "Blue", "Green"],
+            ["Cat", "Dog", "Fish"]
+        ]
+    },
+    "Office Lunch": {
+        "categories": ["Employee", "Sandwich", "Drink"],
+        "elements": [
+            ["David", "Eve", "Frank"],
+            ["Ham", "Cheese", "Tuna"],
+            ["Coffee", "Tea", "Water"]
+        ]
+    },
+    "Party Guests": {
+        "categories": ["Guest", "Costume", "Gift"],
+        "elements": [
+            ["Grace", "Heidi", "Ivan", "Judy"],
+            ["Pirate", "Robot", "Wizard", "Alien"],
+            ["Book", "Game", "Music", "Plant"]
+        ]
+    }
+}

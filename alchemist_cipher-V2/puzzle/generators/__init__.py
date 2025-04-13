@@ -1,0 +1,11 @@
+# Make 'generators' a package
+# Import functions to make them easily accessible from PuzzleGenerator
+from .symbol_cipher_gen import generate_symbol_puzzle_internal
+from .logic_grid_gen import generate_logic_grid_puzzle_internal
+from .social_deduction_gen import generate_social_deduction_puzzle_internal
+from .common_sense_gen import generate_common_sense_gap_puzzle_internal
+from .relationship_map_gen import generate_relationship_map_puzzle_internal
+from .ordering_gen import generate_ordering_puzzle_internal
+from .scheduling_gen import generate_scheduling_puzzle_internal
+from .dilemma_gen import generate_dilemma_puzzle_internal
+from .agent_simulation_gen import generate_agent_simulation_puzzle_internal
