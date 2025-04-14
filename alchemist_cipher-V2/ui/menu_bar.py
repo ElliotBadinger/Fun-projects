@@ -4,7 +4,7 @@ import logging
 
 # Import necessary components from sibling modules or parent packages
 # from .dialogs import AiSolverDialog # Example if you create this dialog
-from ..themes import THEMES # Need access to themes for the menu
+from themes import THEMES # Need access to themes for the menu
 
 logger = logging.getLogger(__name__)
 

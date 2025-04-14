@@ -4,9 +4,9 @@ import re
 import logging
 
 # Import necessary components from the puzzle package
-from ..common import ClueType, VOWELS, CONSONANTS
-from ..puzzle_types import Puzzle
-from ..verifier import PuzzleVerifier # To check generated puzzle
+from puzzle.common import ClueType, VOWELS, CONSONANTS
+from puzzle.puzzle_types import Puzzle
+from puzzle.verifier import PuzzleVerifier # To check generated puzzle
 
 logger = logging.getLogger(__name__)
 

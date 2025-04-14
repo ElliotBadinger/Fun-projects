@@ -2,8 +2,18 @@ from PyQt6.QtWidgets import QHBoxLayout, QPushButton, QSpacerItem, QSizePolicy
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize, Qt
 import logging
+import os # Import os
+import sys # Import sys
+
+# from utils import resource_path # Removed import
 
 logger = logging.getLogger(__name__)
+
+# Calculate base path once for icons
+try:
+    base_path = sys._MEIPASS
+except AttributeError:
+    base_path = os.path.abspath(".")
 
 def populate_control_bar_layout(parent_layout, main_window):
     """Creates the control bar buttons and adds them to the parent layout.
@@ -19,8 +29,8 @@ def populate_control_bar_layout(parent_layout, main_window):
 
     # --- Hint Button ---
     main_window.hint_button = QPushButton(" Hint")
-    # Try to load icon, provide fallback text if not found
-    hint_icon = QIcon.fromTheme("help-contextual", QIcon("icons/hint.png")) # Example fallback path
+    hint_icon_path = os.path.join(base_path, "icons/hint.png")
+    hint_icon = QIcon.fromTheme("help-contextual", QIcon(hint_icon_path))
     if not hint_icon.isNull(): main_window.hint_button.setIcon(hint_icon)
     main_window.hint_button.setIconSize(icon_size)
     main_window.hint_button.setToolTip("Use a hint for the current puzzle (Ctrl+H)")
@@ -31,7 +41,8 @@ def populate_control_bar_layout(parent_layout, main_window):
 
     # --- Check Button ---
     main_window.check_button = QPushButton(" Check")
-    check_icon = QIcon.fromTheme("dialog-ok-apply", QIcon("icons/check.png"))
+    check_icon_path = os.path.join(base_path, "icons/check.png")
+    check_icon = QIcon.fromTheme("dialog-ok-apply", QIcon(check_icon_path))
     if not check_icon.isNull(): main_window.check_button.setIcon(check_icon)
     main_window.check_button.setIconSize(icon_size)
     main_window.check_button.setToolTip("Check if your current solution is correct (Enter)")
@@ -43,7 +54,8 @@ def populate_control_bar_layout(parent_layout, main_window):
 
     # --- Reset Button ---
     main_window.reset_button = QPushButton(" Reset")
-    reset_icon = QIcon.fromTheme("edit-undo", QIcon("icons/reset.png"))
+    reset_icon_path = os.path.join(base_path, "icons/reset.png")
+    reset_icon = QIcon.fromTheme("edit-undo", QIcon(reset_icon_path))
     if not reset_icon.isNull(): main_window.reset_button.setIcon(reset_icon)
     main_window.reset_button.setIconSize(icon_size)
     main_window.reset_button.setToolTip("Reset the current puzzle inputs and hints used (Ctrl+R)")

@@ -1,2 +1,20 @@
 /alchemist_cipher_save.json
 /__pycache__
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Packaging / Build artifacts
+/alchemist_cipher-V2/build/
+/alchemist_cipher-V2/dist/
+/alchemist_cipher-V2/output/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Other
+*.log

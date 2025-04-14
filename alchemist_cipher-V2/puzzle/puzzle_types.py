@@ -3,7 +3,7 @@ import random
 import logging
 
 # Import Enums from common.py
-from .common import ClueType, HumanScenarioType, VOWELS
+from puzzle.common import ClueType, HumanScenarioType, VOWELS
 
 class Puzzle:
     """Represents a single Symbol Cipher puzzle with educational elements."""

@@ -1,0 +1,70 @@
+[
+    {
+        "id": "deadline_help",
+        "desc": "You see a colleague, Alex, struggling significantly with their part of a team project shortly before the deadline. Offering to help Alex might jeopardize your own remaining tasks and risk your part being late. Not helping ensures your work is done, but might cause Alex's part to be incomplete, potentially harming the overall team result.",
+        "options": [
+            "Offer significant help to Alex",
+            "Offer limited advice but focus on your tasks",
+            "Focus completely on your own tasks",
+            "Inform the manager about Alex's struggle"
+        ],
+        "solution": "Offer limited advice but focus on your tasks",
+        "info": [
+            "Team success often requires mutual support.",
+            "Meeting individual responsibilities is crucial for project timelines.",
+            "Open communication with management about potential risks is sometimes necessary.",
+            "Alex has occasionally missed deadlines before."
+        ]
+    },
+    {
+        "id": "minor_error",
+        "desc": "You discover a minor, non-critical calculation error in a report that your team, led by Ben, has already submitted to another department. Pointing out the error now might cause slight embarrassment for the team and Ben. Ignoring it has a very small chance of causing minor confusion later if someone scrutinizes the figures closely, but it will likely go unnoticed.",
+        "options": [
+            "Inform Ben privately about the error",
+            "Send a correction email to the receiving department",
+            "Ignore the error",
+            "Ask a trusted colleague for advice first"
+        ],
+        "solution": "Inform Ben privately about the error",
+        "info": [
+            "Maintaining accuracy and integrity in reports is important.",
+            "Team cohesion and avoiding unnecessary alarms are also valuable.",
+            "Ben is generally receptive to constructive feedback.",
+            "The other department relies on this report for high-level summaries."
+        ]
+    },
+    {
+        "id": "confidential_info",
+        "desc": "During a casual conversation in the break room, your friend and colleague, Chloe, accidentally mentions confidential information about an upcoming, unannounced company restructuring that could affect several jobs. You realize you weren't supposed to know this yet.",
+        "options": [
+            "Pretend you didn't hear/understand",
+            "Tell Chloe she shouldn't share that",
+            "Report the leak to HR/your manager",
+            "Keep quiet but feel conflicted"
+        ],
+        "solution": "Tell Chloe she shouldn't share that",
+        "info": [
+            "Maintaining confidentiality is a professional responsibility.",
+            "Friendship loyalty can create difficult conflicts of interest.",
+            "Information leaks can cause significant disruption and anxiety.",
+            "Company policy requires reporting breaches, but the context might matter."
+        ]
+    },
+    {
+        "id": "credit_taking",
+        "desc": "You notice during a team meeting that your manager, David, presents an idea you shared with him privately last week as entirely his own, receiving praise from senior leadership. David didn't acknowledge your contribution at all.",
+        "options": [
+            "Speak to David privately after the meeting",
+            "Raise the issue publicly in the meeting",
+            "Talk to HR or David's manager",
+            "Let it go, avoid confrontation"
+        ],
+        "solution": "Speak to David privately after the meeting",
+        "info": [
+            "Receiving credit for your work is important for career progression.",
+            "Direct confrontation with a manager can be risky.",
+            "Documenting your contributions can be helpful.",
+            "Company culture influences how such conflicts are typically resolved."
+        ]
+    }
+]

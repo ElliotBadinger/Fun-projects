@@ -3,11 +3,11 @@ import random
 import logging
 import itertools # For combinations in clue generation
 
-# Import necessary components from the puzzle package
-from ..common import HumanScenarioType
-from ..puzzle_types import ScenarioPuzzle
+# Changed imports to absolute
+from puzzle.common import HumanScenarioType
+from puzzle.puzzle_types import ScenarioPuzzle
 # Import the internal verifier to check solvability
-from ..verifiers.logic_grid_verifier import _LogicGridInternalVerifier
+from puzzle.verifiers.logic_grid_verifier import _LogicGridInternalVerifier
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,7 @@
 # Allows running with `python -m alchemist_cipher`
 import sys
+import os
+# Change to relative import when running as a module
 from .ui.main_window import main
 
 if __name__ == "__main__":

@@ -1,5 +1,9 @@
 from enum import Enum, auto
 import os
+# Removed logging import if no longer needed here
+# from utils import resource_path # Removed import
+
+# Removed logger setup if no longer needed here
 
 class ClueType(Enum):
     DIRECT = auto()
@@ -29,23 +33,4 @@ LOGIC_GRID_YES = '✔️'
 LOGIC_GRID_NO = '❌'
 LOGIC_GRID_UNKNOWN = '?'
 
-# Define path to game_data relative to this file's location
-# __file__ gives the path to common.py
-# os.path.dirname gives the directory containing common.py (puzzle/)
-# os.path.join with ".." goes up one level (to alchemist_cipher/)
-# os.path.join again adds "game_data"
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "game_data"))
-
-# Validate DATA_DIR exists
-if not os.path.isdir(DATA_DIR):
-    # Try an alternative relative path assuming script run from project root
-    alt_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../..", "alchemist_cipher-V2/game_data"))
-    if os.path.isdir(alt_data_dir):
-        DATA_DIR = alt_data_dir
-    else:
-        # Or compute based on current working directory as a last resort
-        cwd_data_dir = os.path.abspath(os.path.join(os.getcwd(), "alchemist_cipher-V2/game_data"))
-        if os.path.isdir(cwd_data_dir):
-             DATA_DIR = cwd_data_dir
-        else:
-            raise FileNotFoundError(f"Could not reliably locate the game_data directory. Looked in: {DATA_DIR}, {alt_data_dir}, {cwd_data_dir}")
+# --- DATA_DIR definition removed ---

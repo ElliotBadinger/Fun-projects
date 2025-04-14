@@ -1,0 +1,12 @@
+{
+    "baking a cake": {"present": ["flour", "sugar", "eggs", "mixing bowl", "oven"], "missing": ["oven mitts", "baking pan", "whisk"]},
+    "making tea": {"present": ["kettle", "water", "mug"], "missing": ["tea bag", "milk", "sugar"]},
+    "going camping": {"present": ["tent", "sleeping bag"], "missing": ["flashlight", "water bottle", "insect repellent"]},
+    "planting a seed": {"present": ["seed", "pot", "sunlight"], "missing": ["soil", "water"]},
+    "writing a letter": {"present": ["paper", "pen"], "missing": ["envelope", "stamp", "address"]},
+    "making coffee (drip)": {"present": ["coffee maker", "water", "mug"], "missing": ["coffee grounds", "filter"]},
+    "preparing for rain": {"present": ["shoes", "jacket"], "missing": ["umbrella", "rain boots"]},
+    "setting a table": {"present": ["plate", "fork", "knife"], "missing": ["glass", "napkin", "spoon"]},
+    "wrapping a gift": {"present": ["gift", "box"], "missing": ["wrapping paper", "tape", "scissors"]},
+    "attending online meeting": {"present": ["computer", "internet"], "missing": ["webcam", "microphone", "meeting link"]}
+}

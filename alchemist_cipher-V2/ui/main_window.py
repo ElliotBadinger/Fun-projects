@@ -2,6 +2,7 @@ import sys
 from typing import Optional, Dict, Any, Union, Tuple, List
 import logging
 import time
+import os
 
 # --- PyQt6 Imports ---
 # Core application and window
@@ -16,15 +17,14 @@ from PyQt6.QtWidgets import QTableWidgetItem, QHeaderView, QAbstractItemView
 from PyQt6.QtWidgets import QMenuBar, QMenu
 # Other Qt Core/Gui
 from PyQt6.QtCore import Qt, QSize, QTimer
-from PyQt6.QtGui import QFont, QIcon, QAction
+from PyQt6.QtGui import QFont, QIcon, QAction, QColor
 
 # --- Application Imports ---
-# Core game logic
-from ..core.game_state import GameState
-# Puzzle types and enums
-from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from ..puzzle.common import ClueType, HumanScenarioType
-# UI Creation Helpers
+# Change these to relative imports
+from ..core.game_state import GameState # Changed from core.game_state
+from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle # Changed from puzzle.puzzle_types
+from ..puzzle.common import ClueType, HumanScenarioType # Changed from puzzle.common
+# UI Creation Helpers (These are already relative using '.')
 from .menu_bar import create_menu_bar
 from .info_bar import populate_info_bar_layout
 from .game_area import create_game_area_layout
@@ -33,18 +33,25 @@ from .puzzle_display import (
     create_symbol_puzzle_ui, create_scenario_puzzle_ui,
     display_symbol_clues, display_scenario_information,
     get_scenario_solution_from_ui, update_symbol_assignments_display,
-    clear_layout, get_clue_prefix, get_puzzle_type_display_name
+    clear_layout, get_clue_prefix, get_puzzle_type_display_name,
+    apply_visual_feedback, clear_visual_feedback
 )
 from .dialogs import PuzzleTypeDialog
 # Theming
-from ..themes import THEMES
+from .themes import THEMES # Changed from ..themes
 # Tutorial
-from ..tutorial import TutorialDialog, PracticePuzzleDialog
-# AI Solvers
-# from ..ai import get_solver_instances, AbstractPuzzleSolver # Import if needed directly
+from ..tutorial import TutorialDialog, PracticePuzzleDialog # Changed from tutorial
+# AI Solvers (If uncommented, would also need relative path)
+# from ..ai import get_solver_instances, AbstractPuzzleSolver # Changed from ai 
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
+# --- Calculate Base Path for Resources ---
+try:
+    base_path = sys._MEIPASS
+except AttributeError:
+    base_path = os.path.abspath(".")
 
 class SymbolCipherGame(QMainWindow):
     """Main application window for The Alchemist's Cipher & Logic Puzzles game."""
@@ -93,8 +100,33 @@ class SymbolCipherGame(QMainWindow):
         # --- Window Setup ---
         self.setWindowTitle("The Alchemist's Cipher & Logic Puzzles")
         self.setMinimumSize(900, 700)
-        # Set application icon (consider moving this to main() if preferred)
-        # self.setWindowIcon(QIcon.fromTheme("applications-education", QIcon("icons/app_icon.png"))) # Example with fallback
+
+        # --- Set Window Icon ---
+        try:
+            # Path logic specifically for the icon
+            if getattr(sys, 'frozen', False):
+                # The application is running frozen (packed by PyInstaller)
+                icon_base_path = sys._MEIPASS
+            else:
+                # The application is running in a normal Python environment
+                icon_base_path = os.path.dirname(os.path.abspath(__file__))
+                # If __file__ is in ui/, go up one level to project root relative path
+                icon_base_path = os.path.join(icon_base_path, '..') 
+            
+            icon_path = os.path.join(icon_base_path, "icons/app-logo(V2).ico")
+            icon_path = os.path.normpath(icon_path) # Normalize path separators
+            
+            if os.path.exists(icon_path):
+                self.setWindowIcon(QIcon(icon_path))
+                logger.info(f"Loaded window icon from: {icon_path}")
+            else:
+                logger.warning(f"Window icon not found at calculated path: {icon_path}")
+                # Fallback to theme icon if custom icon not found
+                self.setWindowIcon(QIcon.fromTheme("applications-education")) 
+        except Exception as e:
+            logger.error(f"Error setting window icon: {e}", exc_info=True)
+            # Fallback to theme icon on any error
+            self.setWindowIcon(QIcon.fromTheme("applications-education")) 
 
         # --- UI Construction ---
         central_widget = QWidget()
@@ -770,7 +802,7 @@ class SymbolCipherGame(QMainWindow):
         try:
             # Ensure current UI state is saved if applicable (especially for scenarios)
             if isinstance(self.game_state.current_puzzle, ScenarioPuzzle):
-                 current_ui_state = get_scenario_solution_from_ui(self, check_completeness=False) # Get state even if incomplete
+                 current_ui_state = get_scenario_solution_from_ui(self, check_completeness=False)
                  if current_ui_state is not None:
                       self.game_state.scenario_user_state = current_ui_state
                  else:
@@ -940,7 +972,7 @@ class SymbolCipherGame(QMainWindow):
                           f"A collection of logic puzzles and scenarios.\n"
                           f"Built with Python & PyQt6.\n\n"
                           f"(Save File Version: {save_version})\n"
-                          f"(c) 2024 Your Name/Organization")
+                          f"(c) 2025 Epistemophile")
 
 
     # --- AI Solver Control Methods ---
@@ -974,12 +1006,12 @@ class SymbolCipherGame(QMainWindow):
         self._set_ui_interactive(True)
         self._set_feedback("AI Solver Stopped.", "blue")
 
-    def _set_ui_interactive(self, interactive: bool):
+    def _set_ui_interactive(self, interactive: bool, checking: bool = False):
         """Enables or disables UI elements based on AI running state."""
         logger.debug(f"Setting UI interactive state to: {interactive}")
         # Menu Actions
         if self.run_ai_action: self.run_ai_action.setEnabled(interactive)
-        if self.stop_ai_action: self.stop_ai_action.setEnabled(not interactive)
+        if self.stop_ai_action: self.stop_ai_action.setEnabled(self.is_ai_running)
         # Consider disabling other menus like Game->New, Options->Theme?
         # if self.game_menu: self.game_menu.setEnabled(interactive) # Example if menu ref stored
         # if self.options_menu: self.options_menu.setEnabled(interactive) # Example
@@ -1009,11 +1041,21 @@ class SymbolCipherGame(QMainWindow):
                  for button in self.scenario_input_widget.buttons():
                       button.setEnabled(interactive)
 
-        # Update clues text edit read-only state? Usually always read-only.
-        # if self.clues_text: self.clues_text.setReadOnly(not interactive) # Example if needed
-
-        # Force UI update
-        QApplication.processEvents()
+        # --- Control Bar Buttons --- 
+        # Special handling during the brief "Correct!" message display period
+        if checking and not interactive:
+             if self.check_button: self.check_button.setEnabled(False)
+             if self.reset_button: self.reset_button.setEnabled(False)
+             if self.hint_button: self.hint_button.setEnabled(False)
+        else: # Restore normal button state based on interactiveness and game state
+             if self.check_button: self.check_button.setEnabled(interactive)
+             if self.reset_button: self.reset_button.setEnabled(interactive)
+             hints_left = 0
+             if self.game_state and self.game_state.current_puzzle:
+                  hints_left = self.game_state.max_hints_per_level - self.game_state.hints_used_this_level
+             if self.hint_button: self.hint_button.setEnabled(interactive and hints_left > 0)
+             
+        logger.debug(f"UI Interactive state set to: {interactive}")
 
 
     def _ai_step(self):
@@ -1035,7 +1077,7 @@ class SymbolCipherGame(QMainWindow):
             # --- Get the correct solution (using internal solver for step-by-step) ---
             # In a real scenario, you might call the selected external AI solver here,
             # but for step-by-step visualization, using the internal one makes sense.
-            from ..ai.solvers import InternalSolver # Local import for clarity
+            from ai.solvers import InternalSolver # Local import for clarity
             internal_solver = InternalSolver()
             correct_solution_data = internal_solver.solve(puzzle)
 
@@ -1249,11 +1291,11 @@ class SymbolCipherGame(QMainWindow):
         for r, person in enumerate(people):
              if person not in schedule:
                  logger.warning(f"AI UI Set (Scheduling): Person '{person}' from UI not found in solution data.")
-                 continue # Or fail? Continue for now.
+                 continue # Or fail?
              for c, slot in enumerate(slots):
                   if slot not in schedule[person]:
                       logger.warning(f"AI UI Set (Scheduling): Slot '{slot}' not found for person '{person}' in solution data.")
-                      continue # Or fail? Continue.
+                      continue # Or fail?
 
                   status = schedule[person][slot] # Should be "Booked" or "Available"
                   target_text = "✔️" if status == "Booked" else ""
@@ -1388,7 +1430,33 @@ def main():
     # Set application details (optional but good practice)
     app.setApplicationName("Alchemist Cipher Logic Puzzles")
     app.setOrganizationName("AI Logic Games") # Replace with your org/name
-    app.setWindowIcon(QIcon.fromTheme("applications-education", QIcon("./icons/potion.png"))) # Example icon path
+
+    # --- Set Application Icon ---
+    try:
+        # Path logic specifically for the icon
+        if getattr(sys, 'frozen', False):
+            # The application is running frozen (packed by PyInstaller)
+            icon_base_path = sys._MEIPASS
+        else:
+            # The application is running in a normal Python environment
+            icon_base_path = os.path.dirname(os.path.abspath(__file__))
+            # If __file__ is in ui/, go up one level to project root relative path
+            icon_base_path = os.path.join(icon_base_path, '..') 
+        
+        icon_path = os.path.join(icon_base_path, "icons/app-logo(V2).ico")
+        icon_path = os.path.normpath(icon_path) # Normalize path separators
+        
+        if os.path.exists(icon_path):
+            app.setWindowIcon(QIcon(icon_path))
+            logging.info(f"Loaded window icon from: {icon_path}")
+        else:
+            logging.warning(f"Window icon not found at calculated path: {icon_path}")
+            # Fallback to theme icon if custom icon not found
+            app.setWindowIcon(QIcon.fromTheme("applications-education")) 
+    except Exception as e:
+        logging.error(f"Error setting window icon: {e}", exc_info=True)
+        # Fallback to theme icon on any error
+        app.setWindowIcon(QIcon.fromTheme("applications-education")) 
 
     # Set level to DEBUG to see detailed logs
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s')

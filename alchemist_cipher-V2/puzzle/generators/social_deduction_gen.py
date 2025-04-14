@@ -2,9 +2,9 @@ from typing import Dict, List, Tuple, Optional, Any
 import random
 import logging
 
-# Import necessary components from the puzzle package
-from ..common import HumanScenarioType
-from ..puzzle_types import ScenarioPuzzle
+# Changed imports to absolute
+from puzzle.common import HumanScenarioType
+from puzzle.puzzle_types import ScenarioPuzzle
 
 logger = logging.getLogger(__name__)
 

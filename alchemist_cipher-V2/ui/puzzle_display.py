@@ -8,10 +8,44 @@ import logging
 from typing import Optional, Dict, Any, Union
 
 # Import puzzle types and enums
-from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from ..puzzle.common import HumanScenarioType, ClueType
+from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
+from puzzle.common import HumanScenarioType, ClueType
 
 logger = logging.getLogger(__name__)
+
+# --- Visual Feedback Styles ---
+ERROR_STYLE = "border: 2px solid red; background-color: #FFDDDD;" # Example: Red border, light red background
+WARNING_STYLE = "border: 2px solid orange; background-color: #FFFFAA;" # Example: Orange border, light yellow background
+# CORRECT_STYLE = "border: 2px solid green; background-color: #DDFFDD;" # Optional: Green for correct
+DEFAULT_STYLE = "" # Default empty style sheet
+
+# --- Visual Feedback Helper Functions ---
+
+def apply_visual_feedback(widget: QWidget, feedback_type: str):
+    """Applies a visual style to a widget based on feedback type."""
+    if not widget: return # Safety check
+    style = DEFAULT_STYLE
+    tooltip = ""
+    if feedback_type == 'error':
+        style = ERROR_STYLE
+        tooltip = "Incorrect or conflicting input." 
+    elif feedback_type == 'warning':
+        style = WARNING_STYLE
+        tooltip = "Potential issue or contradiction."
+    # Add more types like 'correct' if desired
+        
+    # Store original style might be complex if widgets already have styles. Clearing is safer.
+    widget.setStyleSheet(style)
+    widget.setToolTip(tooltip) # Set tooltip for explanation
+    # logger.debug(f"Applied {feedback_type} style to {widget}")
+
+def clear_visual_feedback(widget: QWidget):
+    """Clears any custom visual feedback style from a widget."""
+    if not widget: return # Safety check
+    widget.setStyleSheet(DEFAULT_STYLE) 
+    widget.setToolTip("") # Clear tooltip
+    # logger.debug(f"Cleared style from {widget}")
+
 
 # --- Helper Functions ---
 
@@ -235,7 +269,9 @@ def _create_logic_grid_ui(puzzle: ScenarioPuzzle, parent_layout: QVBoxLayout, ma
         for element_name in elements_in_cat:
              # Create short header like "Col: Name"
              short_cat = cat_name[:3] # Abbreviate category name
-             col_headers.append(f"{short_cat}:{element_name}")
+             # Limit element name length in header
+             element_name_short = (element_name[:8] + '...') if len(element_name) > 11 else element_name 
+             col_headers.append(f"{short_cat}:{element_name_short}")
              col_category_map[flat_col_index] = (cat_name, element_name)
              flat_col_index += 1
 
@@ -249,35 +285,55 @@ def _create_logic_grid_ui(puzzle: ScenarioPuzzle, parent_layout: QVBoxLayout, ma
     table = QTableWidget(num_rows, num_cols)
     table.setVerticalHeaderLabels(row_items)
     table.setHorizontalHeaderLabels(col_headers)
-    main_window.scenario_input_widgets['logic_grid_col_map'] = col_category_map # Store mapping
+    table.setFont(QFont("Arial", 10)) # Adjust font if needed
+    table.setEnabled(is_interactive)
 
-    # Populate table with ComboBoxes
+    # --- Styling and Item Creation ---
+    option_items = ["", "✓", "X"] # Blank, True, False representation
+
     for r in range(num_rows):
         for c in range(num_cols):
-            cell_combo = QComboBox()
-            cell_combo.addItems(["", "✔️", "❌"]) # Blank, Yes, No
-            cell_combo.setFont(QFont("Arial", 12, QFont.Weight.Bold)) # Make symbols clearer
-            cell_combo.setStyleSheet("combobox-popup: 0;") # Compact dropdown
-            cell_combo.setMinimumWidth(40)
-            cell_combo.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-            cell_combo.setEnabled(is_interactive)
-            table.setCellWidget(r, c, cell_combo)
+            # Use QComboBox in each cell for consistent input
+            cell_widget = QComboBox() 
+            cell_widget.addItems(option_items)
+            cell_widget.setFont(QFont("Arial", 11))
+            cell_widget.setEnabled(is_interactive)
+            
+            # Apply fixed size policy to prevent excessive stretching
+            cell_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+            cell_widget.setMinimumWidth(40) # Ensure minimum clickable width
+            
+            # Center the combobox within the cell using a container widget
+            cell_container = QWidget() 
+            cell_layout = QHBoxLayout(cell_container)
+            cell_layout.addWidget(cell_widget)
+            cell_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            cell_layout.setContentsMargins(1, 1, 1, 1) # Minimal margins
+            cell_container.setLayout(cell_layout) # Explicitly set layout
+            
+            table.setCellWidget(r, c, cell_container) # Add container with combobox
 
-    # Configure table appearance
+            # Optional: Connect signal here if immediate feedback per cell change is needed
+            # cell_widget.currentTextChanged.connect(lambda text, r=r, c=c: main_window._logic_grid_cell_changed(r, c, text))
+
+
+    # Adjust header resize modes AFTER setting cell widgets maybe?
+    table.resizeColumnsToContents()
+    table.resizeRowsToContents()
+    # Use Interactive resize mode or Stretch based on preference/column count
+    # table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive) 
     table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-    # table.horizontalHeader().setStretchLastSection(True) # Stretch last column? Maybe not needed.
+    # table.horizontalHeader().setStretchLastSection(True) # Optional: stretch last column
     table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-    table.setAlternatingRowColors(True) # Improve readability
+    # table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+    
+    # --- Important: Store the table and the column map ---
+    main_window.scenario_input_widget = table # Store the table itself as the main input
+    main_window.scenario_input_widgets['column_map'] = col_category_map # Store the helper map
 
-    # Store table reference and add to layout
-    main_window.scenario_input_widget = table
-    table.setEnabled(is_interactive) # Enable/disable the whole table
     parent_layout.addWidget(table)
+    logger.debug("Logic Grid UI created with QComboBox cells.")
 
-    # Adjust minimum height based on content
-    header_height = table.horizontalHeader().height()
-    row_height_estimate = 40 # Estimate height per row
-    table.setMinimumHeight(num_rows * row_height_estimate + header_height + 10) # Add padding
 
 def _create_relationship_map_ui(puzzle: ScenarioPuzzle, parent_layout: QVBoxLayout, main_window, is_interactive: bool):
     """Creates a QTextEdit for relationship map input."""
@@ -428,243 +484,230 @@ def _create_dilemma_ui(puzzle: ScenarioPuzzle, parent_layout: QVBoxLayout, main_
 # --- UI State Retrieval ---
 
 def get_scenario_solution_from_ui(main_window, check_completeness=True) -> Optional[Dict[str, Any]]:
-    """Retrieves the current user solution from the scenario input UI elements."""
+    """Extracts the current solution attempt from the UI widgets."""
     puzzle = main_window.game_state.current_puzzle
-    widget = main_window.scenario_input_widget
-
-    if not isinstance(puzzle, ScenarioPuzzle):
-        logger.error("Attempted to get scenario solution when puzzle is not a ScenarioPuzzle.")
+    if not puzzle or not puzzle.is_scenario:
+        logger.error("Attempted to get scenario solution with no active scenario puzzle.")
         return None
-    if not widget:
-         logger.error("Attempted to get scenario solution, but scenario_input_widget is None.")
-         main_window._set_feedback("Internal UI Error: Input widget not found.", "red")
-         return None
 
-    logger.debug(f"Getting scenario solution from UI for type: {puzzle.puzzle_type.name}")
-    solution_dict = {}
+    solution_data: Dict[str, Any] = {"type": puzzle.puzzle_type}
+    widget = main_window.scenario_input_widget
+    puzzle_type = puzzle.puzzle_type
+    is_complete = True # Assume complete initially
 
     try:
-        # --- Logic Grid ---
-        if puzzle.puzzle_type == HumanScenarioType.LOGIC_GRID:
-             if not isinstance(widget, QTableWidget):
-                 main_window._set_feedback("Internal UI Error: Expected QTableWidget for Logic Grid.", "red")
-                 return None
-             solved_map = {}
-             rows = widget.rowCount()
-             cols = widget.columnCount()
-             try:
-                 row_headers = [widget.verticalHeaderItem(r).text() for r in range(rows)]
-                 col_map = main_window.scenario_input_widgets.get('logic_grid_col_map', {})
-             except AttributeError:
-                  main_window._set_feedback("Internal UI Error: Grid headers/mapping missing.", "red")
-                  return None
-
-             if not col_map or len(col_map) != cols:
-                 main_window._set_feedback("Internal UI Error: Grid column mapping error.", "red")
-                 return None
-
-             # Initialize map for all entities
-             for entity in row_headers: solved_map[entity] = {}
-
-             # Validate input: Ensure no contradictions and all cells filled (if checking completeness)
-             all_cells_filled = True
-             validation_passed = True
-             temp_validation_map = {entity: {} for entity in row_headers} # Track 'Yes' assignments for validation
-
-             for r in range(rows):
-                 if not validation_passed: break
-                 entity_name = row_headers[r]
-                 yes_in_row_for_cat = {} # Track yes counts per category for this row
-
-                 for c in range(cols):
-                      cell_widget = widget.cellWidget(r, c)
-                      if isinstance(cell_widget, QComboBox):
-                           selection = cell_widget.currentText()
-                           category_name, element_value = col_map[c]
-
-                           if check_completeness and selection == "":
-                                all_cells_filled = False
-                                continue # Skip blanks if checking completeness
-
-                           if selection == "✔️":
-                                # Check Row Constraint: Only one 'Yes' per category group in a row
-                                if category_name in temp_validation_map[entity_name] and temp_validation_map[entity_name][category_name] != element_value:
-                                     main_window._set_feedback(f"Input Error: Grid contradiction in row '{entity_name}' for category '{category_name}'.", "orange")
-                                     validation_passed = False; break
-                                # Check Column Constraint: Only one 'Yes' per value across all entities
-                                for other_entity, assignments in temp_validation_map.items():
-                                     if other_entity != entity_name and assignments.get(category_name) == element_value:
-                                          main_window._set_feedback(f"Input Error: Grid contradiction in column for '{element_value}' ({category_name}).", "orange")
-                                          validation_passed = False; break
-                                if not validation_passed: break
-                                # Tentatively assign 'Yes' for validation
-                                temp_validation_map[entity_name][category_name] = element_value
-
-                           elif selection == "❌":
-                                # Check against tentative 'Yes' assignment
-                                if temp_validation_map.get(entity_name, {}).get(category_name) == element_value:
-                                     main_window._set_feedback(f"Input Error: Grid contradiction - Cannot mark 'No' where 'Yes' is implied for '{entity_name}' / '{element_value}'.", "orange")
-                                     validation_passed = False; break
-                      else:
-                           logger.warning(f"Non-ComboBox widget found in logic grid cell ({r},{c}).")
-                           validation_passed = False # Treat unexpected widget as error
-                           break # Stop checking this row
-                 if not validation_passed: break # Stop checking rows
-
-             if not validation_passed: return None # Contradiction found
-
-             if check_completeness and not all_cells_filled:
-                  main_window._set_feedback("Input Incomplete: Please mark every cell in the grid (✔️ or ❌).", "orange")
-                  return None
-
-             # If validation passes (and complete if checked), build the final solution map from 'Yes' marks
-             final_solved_map = {entity: {} for entity in row_headers}
-             for r in range(rows):
-                  entity_name = row_headers[r]
-                  for c in range(cols):
-                      cell_widget = widget.cellWidget(r,c)
-                      if isinstance(cell_widget, QComboBox) and cell_widget.currentText() == "✔️":
-                           category_name, element_value = col_map[c]
-                           final_solved_map[entity_name][category_name] = element_value
-             solution_dict = {"grid": final_solved_map}
-
-        # --- Simple Text Input ---
-        elif isinstance(widget, QLineEdit):
-            answer = widget.text().strip()
-            if check_completeness and not answer:
-                main_window._set_feedback("Input Needed: Please enter your answer.", "orange")
+        if puzzle_type == HumanScenarioType.LOGIC_GRID:
+            if not isinstance(widget, QTableWidget):
+                logger.error(f"Expected QTableWidget for Logic Grid, found {type(widget)}")
+                main_window._set_feedback("Internal Error: UI component mismatch for Logic Grid.", "red")
                 return None
-            solution_dict = {"answer": answer}
 
-        # --- Relationship Map (TextEdit) ---
-        elif isinstance(widget, QTextEdit) and puzzle.puzzle_type == HumanScenarioType.RELATIONSHIP_MAP:
-             raw_text = widget.toPlainText().strip()
-             user_map_input = {}
-             expected_pair_count = len(puzzle.characters) // 2 if puzzle.characters else 0
-             puzzle_char_names = {str(char.get('name','')) for char in puzzle.characters} if puzzle.characters else set() # Ensure names are strings
+            grid_solution: Dict[str, Dict[str, Optional[bool]]] = {}
+            table: QTableWidget = widget
+            row_labels = [table.verticalHeaderItem(r).text() for r in range(table.rowCount())]
+            col_map = main_window.scenario_input_widgets.get('column_map', {}) # {flat_idx: (cat, item)}
+            
+            if not col_map:
+                 logger.error("Logic Grid column map is missing from scenario_input_widgets.")
+                 main_window._set_feedback("Internal Error: Logic Grid configuration missing.", "red")
+                 return None
 
-             if raw_text:
-                  lines = raw_text.split('\n')
-                  processed_people = set()
-                  line_num = 0
-                  for line in lines:
-                       line_num += 1
-                       line = line.strip()
-                       if not line or line.startswith('#'): continue # Ignore empty lines and comments
+            # --- Basic UI Validation (Example: Check for uniqueness within categories if applicable) ---
+            # This depends heavily on the specific logic grid rules (e.g., match Person to Job)
+            # We could add checks here to ensure only one '✓' per row/column *within a related group*.
+            # For a generic grid, the core verifier handles logical contradictions.
+            # We can check for completeness here.
 
-                       parts = line.split(':', 1)
-                       if len(parts) == 2:
-                            person1_raw = parts[0].strip()
-                            person2_raw = parts[1].strip()
-                            person1 = str(person1_raw) # Ensure string
-                            person2 = str(person2_raw)
+            for r, row_item in enumerate(row_labels):
+                grid_solution[row_item] = {}
+                row_has_positive = False # Example check: Ensure each row has at least one '✓'? (Depends on puzzle)
+                
+                for c in range(table.columnCount()):
+                    col_info = col_map.get(c)
+                    if not col_info:
+                         logger.warning(f"Missing column info for column index {c}")
+                         continue # Skip column if map is broken
+                    col_cat, col_item = col_info
 
-                            if person1 and person2:
-                                 # Validate names against puzzle characters
-                                 if person1 not in puzzle_char_names:
-                                     main_window._set_feedback(f"Input Error (Line {line_num}): Name '{person1}' not recognized in this puzzle.", "orange"); return None
-                                 if person2 not in puzzle_char_names:
-                                      main_window._set_feedback(f"Input Error (Line {line_num}): Name '{person2}' not recognized in this puzzle.", "orange"); return None
-                                 # Validate constraints
-                                 if person1 == person2:
-                                     main_window._set_feedback(f"Input Error (Line {line_num}): Cannot pair '{person1}' with themselves.", "orange"); return None
-                                 if person1 in processed_people or person2 in processed_people:
-                                     main_window._set_feedback(f"Input Error (Line {line_num}): Person '{person1 if person1 in processed_people else person2}' mentioned in multiple pairs.", "orange"); return None
+                    cell_container = table.cellWidget(r, c)
+                    combo_box = cell_container.findChild(QComboBox) if cell_container else None
 
-                                 user_map_input[person1] = person2
-                                 processed_people.add(person1)
-                                 processed_people.add(person2)
-                            else:
-                                main_window._set_feedback(f"Input Error (Line {line_num}): Invalid format - missing name before or after colon.", "orange"); return None
-                       else:
-                            main_window._set_feedback(f"Input Error (Line {line_num}): Invalid format - expected 'Name : Name'.", "orange"); return None
+                    if not combo_box:
+                        logger.error(f"Could not find QComboBox in cell ({r}, {c})")
+                        main_window._set_feedback(f"Internal Error: UI element missing at {row_item}, Col {c}.", "red")
+                        return None # Critical UI error
 
-             # Check completeness only if required
-             if check_completeness and len(processed_people) != len(puzzle.characters):
-                  main_window._set_feedback(f"Input Incomplete: Expected {expected_pair_count} pairs involving all {len(puzzle.characters)} individuals. Found {len(user_map_input)} pairs.", "orange")
-                  return None
+                    value_str = combo_box.currentText()
+                    cell_value: Optional[bool] = None
+                    if value_str == "✓":
+                        cell_value = True
+                        row_has_positive = True
+                    elif value_str == "X":
+                        cell_value = False
+                    else: # Blank
+                        if check_completeness:
+                            is_complete = False
+                            # Optional: Apply visual feedback directly? Needs care.
+                            # apply_visual_feedback(combo_box, 'warning') # Indicate incompleteness
 
-             solution_dict = {"map": user_map_input}
+                    grid_solution[row_item][col_item] = cell_value
+            
+            solution_data['grid'] = grid_solution
+            
+            # --- Completeness Check ---
+            if check_completeness and not is_complete:
+                 main_window._set_feedback("Please fill in all cells in the logic grid ('✓' or 'X').", "orange")
+                 logger.warning("Logic grid check failed: Incomplete.")
+                 # Optional: Add visual cues to empty cells here if desired.
+                 return None # Don't proceed with check if incomplete
 
-        # --- Ordering (Table) ---
-        elif isinstance(widget, QTableWidget) and puzzle.puzzle_type == HumanScenarioType.ORDERING:
-             rows = widget.rowCount()
-             ordered_items = []
-             seen_items = set()
-             all_selected = True
-             for r in range(rows):
-                  cell_widget = widget.cellWidget(r, 0)
-                  if isinstance(cell_widget, QComboBox):
-                       item = cell_widget.currentText()
-                       if not item:
-                            if check_completeness: all_selected = False; break # Stop if checking and found blank
-                            else: ordered_items.append(None); continue # Allow blanks if not checking
-                       if item in seen_items:
-                            main_window._set_feedback(f"Input Error: Item '{item}' appears multiple times in the sequence.", "orange")
-                            return None
-                       ordered_items.append(item)
-                       seen_items.add(item)
-                  else:
-                       logger.warning("Non-ComboBox found in ordering table UI.")
-                       main_window._set_feedback("Internal UI Error: Ordering table setup incorrect.", "red")
-                       return None
+            # --- Add more UI-level validation if needed (e.g., duplicate '✓' in unique groups) ---
+            # Example: If categories[1] and categories[2] must have a unique pairing for each row_item
+            # validation_passed, error_cells = _validate_logic_grid_ui_constraints(table, col_map)
+            # if not validation_passed:
+            #    main_window._set_feedback("Invalid input: Check highlighted cells for conflicts.", "orange")
+            #    for r_err, c_err in error_cells: # Apply visual feedback to error cells
+            #        cell_container = table.cellWidget(r_err, c_err)
+            #        combo = cell_container.findChild(QComboBox) if cell_container else None
+            #        if combo: apply_visual_feedback(combo, 'warning')
+            #    return None
 
-             if check_completeness and not all_selected:
-                  main_window._set_feedback("Input Incomplete: Please select an item for each position in the sequence.", "orange")
-                  return None
-             # Replace None with empty string or handle as needed if incompleteness allowed
-             solution_dict = {"order": [item if item is not None else "" for item in ordered_items]}
 
-        # --- Scheduling (Table) ---
-        elif isinstance(widget, QTableWidget) and puzzle.puzzle_type == HumanScenarioType.SCHEDULING:
-             rows = widget.rowCount()
-             cols = widget.columnCount()
-             schedule_map = {}
-             try:
-                 people = [widget.verticalHeaderItem(r).text() for r in range(rows)]
-                 time_slots = [widget.horizontalHeaderItem(c).text() for c in range(cols)]
-             except AttributeError:
-                  main_window._set_feedback("Internal UI Error: Scheduling grid headers missing.", "red")
-                  return None
+        elif puzzle_type == HumanScenarioType.RELATIONSHIP_MAP:
+            # ... (logic for Relationship Map - potentially complex grid/combos) ...
+             # Ensure completeness check if needed
+            pass # Placeholder
 
-             for r, person in enumerate(people):
-                  schedule_map[person] = {}
-                  for c, slot in enumerate(time_slots):
-                       cell_widget = widget.cellWidget(r, c)
-                       if isinstance(cell_widget, QComboBox):
-                            selection = cell_widget.currentText()
-                            status = "Booked" if selection == "✔️" else "Available"
-                            schedule_map[person][slot] = status
-                       else:
-                            logger.warning("Non-ComboBox found in scheduling table UI.")
-                            main_window._set_feedback("Internal UI Error: Scheduling table setup incorrect.", "red")
-                            return None
-             solution_dict = {"schedule": schedule_map}
+        elif puzzle_type == HumanScenarioType.ORDERING:
+            if not isinstance(widget, QTableWidget):
+                 logger.error(f"Expected QTableWidget for Ordering, found {type(widget)}")
+                 return None
+            table: QTableWidget = widget
+            ordered_items = []
+            positions = []
+            for r in range(table.rowCount()):
+                item_widget = table.item(r, 0) # Item name is in non-editable column 0
+                combo_box_container = table.cellWidget(r, 1) # Combo box is in column 1
+                combo_box = combo_box_container.findChild(QComboBox) if combo_box_container else None
+                
+                if not item_widget or not combo_box:
+                     logger.error(f"Missing item or combobox in ordering table row {r}")
+                     return None
+                     
+                item_name = item_widget.text()
+                position_str = combo_box.currentText()
+                
+                if not position_str: # Blank selection
+                     if check_completeness:
+                         is_complete = False
+                         # apply_visual_feedback(combo_box, 'warning')
+                else:
+                     position = int(position_str)
+                     if position in positions: # Check for duplicate positions selected
+                          if check_completeness: # Only fail completeness check if duplicates found
+                             main_window._set_feedback(f"Invalid input: Position '{position}' assigned multiple times.", "orange")
+                             # Apply visual feedback to conflicting comboboxes? Harder to track pairs.
+                             # apply_visual_feedback(combo_box, 'warning')
+                             return None # Treat as incomplete/invalid for check
+                     positions.append(position)
+                     ordered_items.append((position, item_name)) # Store as (pos, item)
 
-        # --- Dilemma (ButtonGroup) ---
-        elif isinstance(widget, QButtonGroup) and puzzle.puzzle_type == HumanScenarioType.DILEMMA:
-             checked_button = widget.checkedButton()
-             if checked_button:
-                 solution_dict = {"choice": checked_button.text()}
-             elif check_completeness:
-                  main_window._set_feedback("Input Needed: Please select one of the options.", "orange")
-                  return None
-             else: # Not checking completeness, allow no selection
-                  solution_dict = {"choice": None} # Or empty string? None seems better.
+            if check_completeness and not is_complete:
+                 main_window._set_feedback("Please assign a unique position to all items.", "orange")
+                 return None
+            
+            # Sort by position and extract item names
+            ordered_items.sort()
+            solution_data['ordered_items'] = [item for pos, item in ordered_items]
+
+
+        elif puzzle_type == HumanScenarioType.SCHEDULING:
+            if not isinstance(widget, QTableWidget):
+                 logger.error(f"Expected QTableWidget for Scheduling, found {type(widget)}")
+                 return None
+            table: QTableWidget = widget
+            schedule: Dict[str, Dict[str, Optional[str]]] = {} # {time_slot: {category: item}}
+            time_slots = [table.verticalHeaderItem(r).text() for r in range(table.rowCount())]
+            categories = [table.horizontalHeaderItem(c).text() for c in range(table.columnCount())]
+            
+            selected_items = set() # For checking duplicates if needed
+
+            for r, time_slot in enumerate(time_slots):
+                 schedule[time_slot] = {}
+                 for c, category in enumerate(categories):
+                     cell_container = table.cellWidget(r, c)
+                     combo_box = cell_container.findChild(QComboBox) if cell_container else None
+                     if not combo_box:
+                         logger.error(f"Could not find QComboBox in scheduling cell ({r}, {c})")
+                         return None
+                         
+                     item_name = combo_box.currentText()
+                     if not item_name: # Blank selection
+                         if check_completeness:
+                             is_complete = False
+                             # apply_visual_feedback(combo_box, 'warning')
+                         schedule[time_slot][category] = None
+                     else:
+                         schedule[time_slot][category] = item_name
+                         # Check for duplicates across the whole schedule if that's a rule
+                         # if item_name in selected_items:
+                         #     is_valid = False # Or handle based on specific puzzle rules
+                         # selected_items.add(item_name)
+
+            if check_completeness and not is_complete:
+                 main_window._set_feedback("Please make a selection for all time slots and categories.", "orange")
+                 return None
+                 
+            # Add validation for schedule rules if needed (e.g., item used only once)
+                 
+            solution_data['schedule'] = schedule
+
+
+        elif puzzle_type == HumanScenarioType.DILEMMA:
+            if not isinstance(widget, QButtonGroup):
+                 logger.error(f"Expected QButtonGroup for Dilemma, found {type(widget)}")
+                 return None
+            button_group: QButtonGroup = widget
+            checked_button = button_group.checkedButton()
+            if not checked_button:
+                 if check_completeness:
+                     main_window._set_feedback("Please choose one option for the dilemma.", "orange")
+                     # Apply visual feedback to the groupbox?
+                     return None
+                 solution_data['choice'] = None
+            else:
+                 solution_data['choice'] = checked_button.text()
+
+
+        elif puzzle_type in [HumanScenarioType.SOCIAL_DEDUCTION,
+                             HumanScenarioType.COMMON_SENSE_GAP,
+                             HumanScenarioType.AGENT_SIMULATION]:
+            if not isinstance(widget, QLineEdit):
+                 logger.error(f"Expected QLineEdit for {puzzle_type.name}, found {type(widget)}")
+                 return None
+            line_edit: QLineEdit = widget
+            answer = line_edit.text().strip()
+            if not answer:
+                 if check_completeness:
+                     main_window._set_feedback("Please enter your answer.", "orange")
+                     # apply_visual_feedback(line_edit, 'warning')
+                     return None
+                 solution_data['answer'] = None
+            else:
+                 solution_data['answer'] = answer
 
         else:
-            # Type not handled or widget mismatch
-            logger.error(f"Cannot get UI solution for {puzzle.puzzle_type.name}: Widget type mismatch or type not handled. Widget is {type(widget)}.")
-            main_window._set_feedback(f"Internal UI Error: Cannot read input for {get_puzzle_type_display_name(puzzle)}.", "red")
-            return None
+             logger.warning(f"Solution extraction not implemented for scenario type: {puzzle_type.name}")
+             main_window._set_feedback(f"Cannot check solution for type: {puzzle_type.name}", "orange")
+             return None
 
     except Exception as e:
-        logger.exception("Error getting solution from UI.")
-        main_window._set_feedback(f"Internal Error reading solution: {e}", "red")
+        logger.exception(f"Error getting solution from UI for puzzle type {puzzle_type.name}")
+        main_window._set_feedback(f"Error reading UI state: {e}", "red")
         return None
 
-    logger.debug(f"Retrieved scenario solution from UI: {solution_dict}")
-    return solution_dict
+    logger.debug(f"Extracted solution data from UI: {solution_data}")
+    return solution_data
 
 
 # --- UI State Update ---

@@ -3,14 +3,16 @@ import random
 import logging
 import json
 import os
+import sys # Import sys
 
 # Relative imports for components within the puzzle package
-from .common import HumanScenarioType, ClueType, SYMBOLS_POOL, LETTERS_POOL, VOWELS, CONSONANTS, DATA_DIR
-from .puzzle_types import Puzzle, ScenarioPuzzle
-from .verifier import PuzzleVerifier # Needed for symbol puzzle verification call
+from puzzle.common import HumanScenarioType, ClueType, SYMBOLS_POOL, LETTERS_POOL, VOWELS, CONSONANTS
+from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
+from puzzle.verifier import PuzzleVerifier # Needed for symbol puzzle verification call
+# from utils import resource_path # Removed import
 
 # Import specific generator functions
-from .generators import (
+from puzzle.generators import (
     symbol_cipher_gen,
     logic_grid_gen,
     social_deduction_gen,
@@ -25,6 +27,19 @@ from .generators import (
 # Setup logging
 logger = logging.getLogger(__name__)
 
+# Define DATA_DIR directly using sys._MEIPASS check
+try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    base_path = sys._MEIPASS
+except AttributeError:
+    # Not frozen, assume running from dev environment (CWD = project root)
+    base_path = os.path.abspath(".")
+DATA_DIR = os.path.join(base_path, "game_data")
+
+# Validate DATA_DIR exists
+if not os.path.isdir(DATA_DIR):
+    logger.error(f"FATAL: Could not find game_data directory at resolved path: {DATA_DIR} (Base: {base_path})")
+    raise FileNotFoundError(f"Could not locate the game_data directory at: {DATA_DIR}")
 
 class PuzzleGenerator:
     """Generates verified Symbol Cipher OR human-centric Scenario puzzles."""

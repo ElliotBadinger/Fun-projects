@@ -1,5 +1,6 @@
 import json
 import os
+import sys # Import sys
 from typing import Dict, Optional, Set, Union, Any, Tuple, List
 from enum import Enum
 import logging
@@ -7,15 +8,26 @@ import random
 import time
 
 # Corrected relative imports based on the new structure
-from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from ..puzzle.generator import PuzzleGenerator
-from ..puzzle.common import HumanScenarioType, ClueType
+from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
+from puzzle.generator import PuzzleGenerator
+from puzzle.common import HumanScenarioType, ClueType
+# from utils import resource_path # Removed import
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Define SAVE_FILE_PATH directly using sys._MEIPASS check
+SAVE_FILE_NAME = "alchemist_cipher_save.json"
+try:
+    # Running frozen (PyInstaller)
+    base_path = sys._MEIPASS
+except AttributeError:
+    # Running not frozen (dev environment)
+    base_path = os.path.abspath(".")
+SAVE_FILE_PATH = os.path.join(base_path, SAVE_FILE_NAME)
+
 class GameState:
-    SAVE_FILE = "alchemist_cipher_save.json"
+    # SAVE_FILE = "alchemist_cipher_save.json" # Removed old constant
     SAVE_VERSION = 3 # Increment version due to adding solver name
 
     def __init__(self):
@@ -119,12 +131,13 @@ class GameState:
                 "user_state": user_state
             }
 
-            with open(self.SAVE_FILE, 'w') as f:
+            # Use the calculated SAVE_FILE_PATH
+            with open(SAVE_FILE_PATH, 'w') as f:
                 json.dump(state, f, indent=4)
-            logging.info(f"Game state saved successfully to {self.SAVE_FILE}")
+            logging.info(f"Game state saved successfully to {SAVE_FILE_PATH}")
 
         except IOError as e:
-            logging.error(f"Could not save game state to {self.SAVE_FILE}: {e}")
+            logging.error(f"Could not save game state to {SAVE_FILE_PATH}: {e}")
             raise IOError(f"Could not save game state: {e}")
         except TypeError as e:
             # Attempt to serialize state even on error for debugging
@@ -143,8 +156,9 @@ class GameState:
 
     def load_game(self) -> None:
         """Loads game state with improved error handling, validation, and defaults."""
-        if not os.path.exists(self.SAVE_FILE):
-            logging.info(f"Save file '{self.SAVE_FILE}' not found. Starting new game state.")
+        # Use the calculated SAVE_FILE_PATH
+        if not os.path.exists(SAVE_FILE_PATH):
+            logging.info(f"Save file '{SAVE_FILE_PATH}' not found. Starting new game state.")
             # Ensure generator is initialized if not already done (or if it failed before)
             if self.puzzle_generator is None:
                 try:
@@ -156,9 +170,10 @@ class GameState:
 
         state = None
         try:
-            with open(self.SAVE_FILE, 'r') as f:
+            # Use the calculated SAVE_FILE_PATH
+            with open(SAVE_FILE_PATH, 'r') as f:
                 state = json.load(f)
-            logging.info(f"Loaded game state from {self.SAVE_FILE}")
+            logging.info(f"Loaded game state from {SAVE_FILE_PATH}")
 
             loaded_version = state.get("save_version", 0)
             # --- Version Migration Logic ---
@@ -225,10 +240,10 @@ class GameState:
                  self.current_puzzle = None
 
         except FileNotFoundError:
-             logging.info(f"Save file '{self.SAVE_FILE}' not found.")
+             logging.info(f"Save file '{SAVE_FILE_PATH}' not found.")
              self.__init__() # Re-initialize to get defaults
         except (IOError, json.JSONDecodeError) as e:
-            logging.error(f"Error reading or parsing save file '{self.SAVE_FILE}': {e}")
+            logging.error(f"Error reading or parsing save file '{SAVE_FILE_PATH}': {e}")
             self.__init__() # Reset to defaults
             logging.info("Game state reset to default due to load error.")
         except Exception as e:
