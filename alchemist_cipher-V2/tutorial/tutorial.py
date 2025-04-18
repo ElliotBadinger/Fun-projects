@@ -3,14 +3,14 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton,
                            QGridLayout, QComboBox, QSizePolicy, QTextBrowser)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from puzzle import PuzzleGenerator, Puzzle, ClueType
+from ..puzzle import PuzzleGenerator, Puzzle, ClueType
 from typing import Optional
 import os
 import sys # Import sys
 import logging
 
 # from utils import resource_path # Removed import
-from ui.puzzle_display import (create_symbol_puzzle_ui, display_symbol_clues,
+from ..ui.puzzle_display import (create_symbol_puzzle_ui, display_symbol_clues,
                              update_symbol_assignments_display, clear_layout)
 
 logger = logging.getLogger(__name__)

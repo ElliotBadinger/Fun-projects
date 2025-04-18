@@ -5,8 +5,8 @@ import logging
 import math
 
 # Relative imports
-from puzzle.common import ClueType, VOWELS, CONSONANTS
-from puzzle.verifiers.logic_grid_verifier import _LogicGridInternalVerifier
+from .common import ClueType, VOWELS, CONSONANTS
+from .verifiers.logic_grid_verifier import _LogicGridInternalVerifier
 
 logger = logging.getLogger(__name__)
 

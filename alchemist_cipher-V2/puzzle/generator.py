@@ -6,13 +6,13 @@ import os
 import sys # Import sys
 
 # Relative imports for components within the puzzle package
-from puzzle.common import HumanScenarioType, ClueType, SYMBOLS_POOL, LETTERS_POOL, VOWELS, CONSONANTS
-from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from puzzle.verifier import PuzzleVerifier # Needed for symbol puzzle verification call
+from .common import HumanScenarioType, ClueType, SYMBOLS_POOL, LETTERS_POOL, VOWELS, CONSONANTS
+from .puzzle_types import Puzzle, ScenarioPuzzle
+from .verifier import PuzzleVerifier # Needed for symbol puzzle verification call
 # from utils import resource_path # Removed import
 
 # Import specific generator functions
-from puzzle.generators import (
+from .generators import (
     symbol_cipher_gen,
     logic_grid_gen,
     social_deduction_gen,
@@ -32,8 +32,8 @@ try:
     # PyInstaller creates a temp folder and stores path in _MEIPASS
     base_path = sys._MEIPASS
 except AttributeError:
-    # Not frozen, assume running from dev environment (CWD = project root)
-    base_path = os.path.abspath(".")
+    # Not frozen, assume running from dev environment (resolve relative to project root)
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(base_path, "game_data")
 
 # Validate DATA_DIR exists

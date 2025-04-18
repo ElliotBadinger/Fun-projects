@@ -4,10 +4,10 @@ import logging
 import itertools # For combinations in clue generation
 
 # Changed imports to absolute
-from puzzle.common import HumanScenarioType
-from puzzle.puzzle_types import ScenarioPuzzle
+from ..common import HumanScenarioType
+from ..puzzle_types import ScenarioPuzzle
 # Import the internal verifier to check solvability
-from puzzle.verifiers.logic_grid_verifier import _LogicGridInternalVerifier
+from ..verifiers.logic_grid_verifier import _LogicGridInternalVerifier
 
 logger = logging.getLogger(__name__)
 

@@ -2,10 +2,10 @@ from typing import Dict, List, Tuple, Optional, Any
 import random
 import logging
 
-# Changed imports to absolute
-from puzzle.common import HumanScenarioType
-from puzzle.puzzle_types import ScenarioPuzzle
-from puzzle.solvers.scheduling_solver import _SchedulingSolver # Changed from ..solvers
+# Changed imports to relative
+from ..common import HumanScenarioType
+from ..puzzle_types import ScenarioPuzzle
+from ..solvers.scheduling_solver import _SchedulingSolver
 
 logger = logging.getLogger(__name__)
 

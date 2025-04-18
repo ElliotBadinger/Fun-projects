@@ -3,9 +3,9 @@ import random
 import logging
 import itertools
 
-# Changed imports to absolute
-from puzzle.common import HumanScenarioType
-from puzzle.puzzle_types import ScenarioPuzzle
+# Changed imports to relative
+from ..common import HumanScenarioType
+from ..puzzle_types import ScenarioPuzzle
 
 logger = logging.getLogger(__name__)
 

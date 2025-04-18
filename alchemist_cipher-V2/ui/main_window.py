@@ -21,9 +21,9 @@ from PyQt6.QtGui import QFont, QIcon, QAction, QColor
 
 # --- Application Imports ---
 # Change these to relative imports
-from ..core.game_state import GameState # Changed from core.game_state
-from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle # Changed from puzzle.puzzle_types
-from ..puzzle.common import ClueType, HumanScenarioType # Changed from puzzle.common
+from ..core.game_state import GameState 
+from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle 
+from ..puzzle.common import ClueType, HumanScenarioType 
 # UI Creation Helpers (These are already relative using '.')
 from .menu_bar import create_menu_bar
 from .info_bar import populate_info_bar_layout
@@ -38,11 +38,11 @@ from .puzzle_display import (
 )
 from .dialogs import PuzzleTypeDialog
 # Theming
-from .themes import THEMES # Changed from ..themes
+from .themes import THEMES 
 # Tutorial
-from ..tutorial import TutorialDialog, PracticePuzzleDialog # Changed from tutorial
+from ..tutorial.tutorial import TutorialDialog, PracticePuzzleDialog 
 # AI Solvers (If uncommented, would also need relative path)
-# from ..ai import get_solver_instances, AbstractPuzzleSolver # Changed from ai 
+# from ..ai import get_solver_instances, AbstractPuzzleSolver 
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -300,10 +300,23 @@ class SymbolCipherGame(QMainWindow):
 
         try:
             if puzzle.puzzle_type == HumanScenarioType.LOGIC_GRID and isinstance(widget, QTableWidget) and 'grid' in user_state:
-                saved_grid = user_state['grid'] # Assumes format {entity: {cat: value}}
-                # TODO: Implement logic to set combo boxes based on saved_grid
-                logger.warning("Logic Grid UI state restoration not fully implemented.")
-                pass # Needs mapping from saved state back to combo box selection ("✔️", "❌")
+                saved_grid = user_state['grid']  # {row_label: {col_item: Optional[bool]}}
+                col_map = self.scenario_input_widgets.get('column_map', {})
+                for r in range(widget.rowCount()):
+                    row_label = widget.verticalHeaderItem(r).text()
+                    row_data = saved_grid.get(row_label, {})
+                    for c in range(widget.columnCount()):
+                        pair = col_map.get(c)
+                        col_item = pair[1] if pair else None
+                        cell_widget = widget.cellWidget(r, c)
+                        combo_box = cell_widget.findChild(QComboBox) if cell_widget else None
+                        if not combo_box:
+                            continue
+                        val = row_data.get(col_item, None)
+                        text = "" if False else ("X" if val is False else "")
+                        idx = combo_box.findText(text)
+                        if idx >= 0:
+                            combo_box.setCurrentIndex(idx)
             elif isinstance(widget, QLineEdit) and 'answer' in user_state:
                  widget.setText(str(user_state['answer']))
             elif puzzle.puzzle_type == HumanScenarioType.RELATIONSHIP_MAP and isinstance(widget, QTextEdit) and 'map' in user_state:
@@ -476,7 +489,7 @@ class SymbolCipherGame(QMainWindow):
                      if ai_initiated:
                           # This is an error state for AI - it should have fully mapped
                           logger.error("AI initiated check, but symbol puzzle not fully mapped by UI update.")
-                          self._set_feedback("AI Error: Symbol mapping incomplete!", "red", bold=True)
+                          self._set_feedback("AI Error: Symbol mapping incomplete!", "red")
                           self._stop_ai_solver() # Stop AI on error
                           return
                      else:
@@ -895,7 +908,7 @@ class SymbolCipherGame(QMainWindow):
                  QApplication.processEvents() # Try to force style update
             except Exception as e:
                  logger.error(f"Error applying stylesheet for theme '{theme_name}': {e}")
-                 self.setStyleSheet("") # Fallback to default style
+                 self.setStyleSheet("") # Apply default Qt style
         else:
             logger.warning(f"Theme '{theme_name}' not found in THEMES dictionary. Applying default style.")
             self.setStyleSheet("") # Apply default Qt style
@@ -1292,12 +1305,15 @@ class SymbolCipherGame(QMainWindow):
              if person not in schedule:
                  logger.warning(f"AI UI Set (Scheduling): Person '{person}' from UI not found in solution data.")
                  continue # Or fail?
+
+             entity_solution = schedule[person] # {slot: status}
+
              for c, slot in enumerate(slots):
-                  if slot not in schedule[person]:
+                  if slot not in entity_solution:
                       logger.warning(f"AI UI Set (Scheduling): Slot '{slot}' not found for person '{person}' in solution data.")
                       continue # Or fail?
 
-                  status = schedule[person][slot] # Should be "Booked" or "Available"
+                  status = entity_solution[slot] # Should be "Booked" or "Available"
                   target_text = "✔️" if status == "Booked" else ""
                   cell_widget = table.cellWidget(r, c)
 

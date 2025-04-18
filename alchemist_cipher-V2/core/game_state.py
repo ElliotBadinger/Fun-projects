@@ -8,9 +8,9 @@ import random
 import time
 
 # Corrected relative imports based on the new structure
-from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from puzzle.generator import PuzzleGenerator
-from puzzle.common import HumanScenarioType, ClueType
+from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle
+from ..puzzle.generator import PuzzleGenerator
+from ..puzzle.common import HumanScenarioType, ClueType
 # from utils import resource_path # Removed import
 
 # Setup basic logging

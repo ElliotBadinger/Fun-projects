@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBut
 from typing import Optional, Union
 
 # Import puzzle enums if needed for type hints or data
-from puzzle.common import HumanScenarioType
+from ..puzzle.common import HumanScenarioType
 
 class PuzzleTypeDialog(QDialog):
     """Dialog for selecting the type of puzzle to generate."""

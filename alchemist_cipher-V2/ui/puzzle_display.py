@@ -8,8 +8,8 @@ import logging
 from typing import Optional, Dict, Any, Union
 
 # Import puzzle types and enums
-from puzzle.puzzle_types import Puzzle, ScenarioPuzzle
-from puzzle.common import HumanScenarioType, ClueType
+from ..puzzle.puzzle_types import Puzzle, ScenarioPuzzle
+from ..puzzle.common import HumanScenarioType, ClueType
 
 logger = logging.getLogger(__name__)
 
@@ -574,9 +574,37 @@ def get_scenario_solution_from_ui(main_window, check_completeness=True) -> Optio
 
 
         elif puzzle_type == HumanScenarioType.RELATIONSHIP_MAP:
-            # ... (logic for Relationship Map - potentially complex grid/combos) ...
-             # Ensure completeness check if needed
-            pass # Placeholder
+            if not isinstance(widget, QTextEdit):
+                logger.error(f"Expected QTextEdit for Relationship Map, found {type(widget)}")
+                main_window._set_feedback("Internal Error: UI component mismatch for Relationship Map.", "red")
+                return None
+            text = widget.toPlainText().strip()
+            if not text:
+                if check_completeness:
+                    main_window._set_feedback("Please enter relationships in format 'A : B'.", "orange")
+                    return None
+            lines = [line.strip() for line in text.splitlines() if line.strip()]
+            rel_map = {}
+            seen = set()
+            for line in lines:
+                if ':' not in line:
+                    main_window._set_feedback(f"Invalid format: '{line}'. Use 'A : B'.", "orange")
+                    return None
+                parts = line.split(':')
+                if len(parts) != 2:
+                    main_window._set_feedback(f"Invalid format: '{line}'. Use exactly one ':'.", "orange")
+                    return None
+                p1, p2 = parts[0].strip(), parts[1].strip()
+                if not p1 or not p2:
+                    main_window._set_feedback(f"Invalid entry: '{line}'. Both sides required.", "orange")
+                    return None
+                pair = frozenset({p1, p2})
+                if pair in seen:
+                    continue
+                seen.add(pair)
+                rel_map[p1] = p2
+            solution_data['map'] = rel_map
+
 
         elif puzzle_type == HumanScenarioType.ORDERING:
             if not isinstance(widget, QTableWidget):
@@ -637,6 +665,7 @@ def get_scenario_solution_from_ui(main_window, check_completeness=True) -> Optio
                  for c, category in enumerate(categories):
                      cell_container = table.cellWidget(r, c)
                      combo_box = cell_container.findChild(QComboBox) if cell_container else None
+
                      if not combo_box:
                          logger.error(f"Could not find QComboBox in scheduling cell ({r}, {c})")
                          return None
